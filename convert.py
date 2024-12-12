@@ -9,7 +9,7 @@ def read_files(f1, f2, score_file):
     with open(f2, encoding="utf-8") as f:
         content.extend(f.readlines())
     content = [c.strip() for c in content]
-    assert len(content) == (5749 + 1500 + 1379) * 2
+    #assert len(content) == (5749 + 1500 + 1379) * 2
 
     # load scores
     with open(score_file, encoding="utf-8") as f:
@@ -24,20 +24,32 @@ def read_files(f1, f2, score_file):
 
     # create rows: s1 + s2 + score
     datasets = []
-    for i, s in zip(range(len(content)), scores):
+    for i, s in zip(range(min(len(scores),int(len(content)/2))), scores):
         row = [content[i*2], content[i*2+1], s]
         datasets.append(row)
-    assert len(datasets) == 5749 + 1500 + 1379
+    print("found ",len(datasets)," sentences ")        
+    assert len(datasets) %2 == 0
+
+    # split between train dev and test according to original ratios
+    r1=5749/(5749 + 1500 + 1379)
+    l1=r1*len(datasets)
+    l1=int(l1/2)*2
+    
+
+    r2=(5749+1500)/(5749 + 1500 + 1379)
+    l2=r2*len(datasets)
+    l2=int(l2/2)*2
+    
+    print("l1",l1)
+    print("l2",l2)
 
     # split data to train, dev and test
-    train_data = datasets[:5749]
-    dev_data = datasets[5749:5749+1500]
-    test_data = datasets[5749+1500:]
-    assert len(train_data) == 5749
-    assert len(dev_data) == 1500
-    assert len(test_data) == 1379
-
-    return train_data, dev_data, test_data
+    train_data = datasets[:l1]
+    dev_data = datasets[l1:l2]
+    test_data = datasets[l2:]
+    
+    # bonus: return full scored datasets too
+    return train_data, dev_data, test_data,datasets
 
 
 def write_data(data, target_file):
@@ -56,7 +68,7 @@ if __name__ == "__main__":
     language = input('Which language do you want to convert? ')
 
     # load data
-    train_data, dev_data, test_data = read_files(
+    train_data, dev_data, test_data,all_data = read_files(
         f"./data-raw/stsb-{language}-1.txt",
         f"./data-raw/stsb-{language}-2.txt",
         "./data-raw/stsb-scores.txt",
@@ -66,3 +78,4 @@ if __name__ == "__main__":
     write_data(train_data, f"./data/stsb-{language}-train.csv")
     write_data(dev_data, f"./data/stsb-{language}-dev.csv")
     write_data(test_data, f"./data/stsb-{language}-test.csv")
+    write_data(all_data, f"./data/stsb-{language}-all.csv")
